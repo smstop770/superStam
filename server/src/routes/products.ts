@@ -1,104 +1,73 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db';
+import { Product, Category } from '../models';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
-// GET /api/products
-router.get('/', (req: Request, res: Response) => {
-  const db = getDb();
-  const { category, search, featured, limit, offset } = req.query;
-
-  let sql = 'SELECT p.*, c.name as category_name, c.slug as category_slug FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = 1';
-  const params: any[] = [];
-
-  if (category) {
-    // Include products from subcategories too
-    const cat = db.prepare('SELECT id FROM categories WHERE id = ? OR slug = ?').get(category, category) as any;
-    if (cat) {
-      const subs = db.prepare('SELECT id FROM categories WHERE id = ? OR parent_id = ?').all(cat.id, cat.id) as any[];
-      const ids = subs.map(s => s.id);
-      sql += ` AND p.category_id IN (${ids.map(() => '?').join(',')})`;
-      params.push(...ids);
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { category, search, featured, limit, offset } = req.query;
+    const filter: any = { is_active: true };
+    if (category) {
+      const cat = await Category.findOne({ $or: [{ _id: category }, { slug: category }] });
+      if (cat) {
+        const subs = await Category.find({ $or: [{ _id: cat._id }, { parent_id: cat._id }] });
+        filter.category_id = { $in: subs.map(s => String(s._id)) };
+      }
     }
-  }
-
-  if (search) {
-    sql += ' AND (p.name LIKE ? OR p.description LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
-  }
-
-  if (featured === '1' || featured === 'true') {
-    sql += ' AND p.is_featured = 1';
-  }
-
-  sql += ' ORDER BY p.is_featured DESC, p.sort_order, p.created_at DESC';
-
-  const lim = Math.min(parseInt(limit as string) || 50, 100);
-  const off = parseInt(offset as string) || 0;
-  sql += ` LIMIT ${lim} OFFSET ${off}`;
-
-  const products = db.prepare(sql).all(...params);
-  const parsed = products.map((p: any) => ({
-    ...p,
-    images: JSON.parse(p.images || '[]'),
-    variants: JSON.parse(p.variants || '[]'),
-    is_featured: Boolean(p.is_featured),
-    is_active: Boolean(p.is_active),
-  }));
-
-  res.json(parsed);
+    if (search) filter.$or = [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }];
+    if (featured === '1' || featured === 'true') filter.is_featured = true;
+    const lim = Math.min(parseInt(limit as string) || 50, 100);
+    const off = parseInt(offset as string) || 0;
+    const ps = await Product.find(filter).sort({ is_featured: -1, sort_order: 1, created_at: -1 }).skip(off).limit(lim);
+    const catIds = [...new Set(ps.map(p => (p as any).category_id))];
+    const cats = await Category.find({ _id: { $in: catIds } });
+    const catMap: Record<string, any> = {};
+    for (const c of cats) catMap[String(c._id)] = c.toJSON();
+    res.json(ps.map(p => { const o = p.toJSON() as any; return { ...o, category_name: catMap[o.category_id]?.name || '', category_slug: catMap[o.category_id]?.slug || '' }; }));
+  } catch { res.status(500).json({ error: 'שגיאה פנימית' }); }
 });
 
-// GET /api/products/:id
-router.get('/:id', (req: Request, res: Response) => {
-  const db = getDb();
-  const p = db.prepare('SELECT p.*, c.name as category_name, c.slug as category_slug FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ? OR p.slug = ?')
-    .get(req.params.id, req.params.id) as any;
-  if (!p) return res.status(404).json({ error: 'מוצר לא נמצא' });
-  res.json({ ...p, images: JSON.parse(p.images || '[]'), variants: JSON.parse(p.variants || '[]') });
-});
-
-// POST /api/products - admin
-router.post('/', requireAuth, (req: Request, res: Response) => {
-  const { category_id, name, slug, description, price, original_price, images, stock, variants, is_featured, is_active, sort_order } = req.body;
-  if (!category_id || !name || !slug || price == null) return res.status(400).json({ error: 'שדות חובה חסרים' });
-
-  const db = getDb();
-  const id = uuidv4();
+router.get('/:id', async (req: Request, res: Response) => {
   try {
-    db.prepare(`INSERT INTO products (id,category_id,name,slug,description,price,original_price,images,stock,variants,is_featured,is_active,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id, category_id, name, slug, description || '', price, original_price || null, JSON.stringify(images || []), stock ?? 0, JSON.stringify(variants || []), is_featured ? 1 : 0, is_active !== false ? 1 : 0, sort_order || 0);
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id) as any;
-    res.status(201).json({ ...product, images: JSON.parse(product.images), variants: JSON.parse(product.variants) });
-  } catch (err: any) {
-    if (err.message?.includes('UNIQUE')) return res.status(400).json({ error: 'סלאג כבר קיים' });
-    throw err;
-  }
+    const p = await Product.findOne({ $or: [{ _id: req.params.id }, { slug: req.params.id }] });
+    if (!p) return res.status(404).json({ error: 'מוצר לא נמצא' });
+    const cat = await Category.findById((p as any).category_id);
+    const cj = cat ? (cat.toJSON() as any) : {};
+    res.json({ ...(p.toJSON() as any), category_name: cj.name || '', category_slug: cj.slug || '' });
+  } catch { res.status(500).json({ error: 'שגיאה פנימית' }); }
 });
 
-// PUT /api/products/:id - admin
-router.put('/:id', requireAuth, (req: Request, res: Response) => {
-  const { category_id, name, slug, description, price, original_price, images, stock, variants, is_featured, is_active, sort_order } = req.body;
-  const db = getDb();
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    db.prepare(`UPDATE products SET category_id=?,name=?,slug=?,description=?,price=?,original_price=?,images=?,stock=?,variants=?,is_featured=?,is_active=?,sort_order=? WHERE id=?`)
-      .run(category_id, name, slug, description || '', price, original_price || null, JSON.stringify(images || []), stock ?? 0, JSON.stringify(variants || []), is_featured ? 1 : 0, is_active !== false ? 1 : 0, sort_order || 0, req.params.id);
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id) as any;
-    if (!product) return res.status(404).json({ error: 'לא נמצא' });
-    res.json({ ...product, images: JSON.parse(product.images), variants: JSON.parse(product.variants) });
+    const { category_id, name, slug, description, price, original_price, images, stock, variants, is_featured, is_active, sort_order } = req.body;
+    if (!category_id || !name || !slug || price == null) return res.status(400).json({ error: 'שדות חובה חסרים' });
+    const p = await new Product({ _id: uuidv4(), category_id, name, slug, description: description || '', price, original_price: original_price || null, images: images || [], stock: stock ?? 0, variants: variants || [], is_featured: !!is_featured, is_active: is_active !== false, sort_order: sort_order || 0 }).save();
+    res.status(201).json(p);
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE')) return res.status(400).json({ error: 'סלאג כבר קיים' });
-    throw err;
+    if (err.code === 11000) return res.status(400).json({ error: 'סלאג כבר קיים' });
+    res.status(500).json({ error: 'שגיאה פנימית' });
   }
 });
 
-// DELETE /api/products/:id - admin
-router.delete('/:id', requireAuth, (req: Request, res: Response) => {
-  const db = getDb();
-  db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
-  res.json({ success: true });
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { category_id, name, slug, description, price, original_price, images, stock, variants, is_featured, is_active, sort_order } = req.body;
+    const p = await Product.findByIdAndUpdate(req.params.id, { category_id, name, slug, description: description || '', price, original_price: original_price || null, images: images || [], stock: stock ?? 0, variants: variants || [], is_featured: !!is_featured, is_active: is_active !== false, sort_order: sort_order || 0 }, { new: true });
+    if (!p) return res.status(404).json({ error: 'לא נמצא' });
+    res.json(p);
+  } catch (err: any) {
+    if (err.code === 11000) return res.status(400).json({ error: 'סלאג כבר קיים' });
+    res.status(500).json({ error: 'שגיאה פנימית' });
+  }
+});
+
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'שגיאה פנימית' }); }
 });
 
 export default router;

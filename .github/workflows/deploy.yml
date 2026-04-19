@@ -33,7 +33,6 @@ jobs:
             echo "── Install & build server ────────────────"
             cd server
             npm install
-            npm rebuild
             npm run build
 
             echo "── Install & build client ────────────────"
