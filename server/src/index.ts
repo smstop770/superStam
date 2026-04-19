@@ -10,6 +10,7 @@ import productsRoutes from './routes/products';
 import ordersRoutes from './routes/orders';
 import uploadRoutes from './routes/upload';
 import settingsRoutes from './routes/settings';
+import contactRoutes from './routes/contact';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -34,6 +35,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 

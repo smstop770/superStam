@@ -63,6 +63,15 @@ export const getAllSettings = () => api.get('/settings/all').then((r) => r.data)
 export const updateSettings = (data: Record<string, string>) =>
   api.put('/settings', data).then((r) => r.data);
 
+// ---- Contact ----
+export const submitContact = (data: any) => api.post('/contact', data).then((r) => r.data);
+export const getContacts = (params?: Record<string, any>) =>
+  api.get('/contact', { params }).then((r) => r.data);
+export const markContactRead = (id: string) => api.put(`/contact/${id}/read`).then((r) => r.data);
+export const replyContact = (id: string, reply: string) =>
+  api.put(`/contact/${id}/reply`, { reply }).then((r) => r.data);
+export const deleteContact = (id: string) => api.delete(`/contact/${id}`).then((r) => r.data);
+
 // ---- Upload ----
 export const uploadImage = (file: File) => {
   const form = new FormData();

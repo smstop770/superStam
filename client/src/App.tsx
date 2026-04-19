@@ -24,6 +24,8 @@ import AdminCategoryProducts from './admin/AdminCategoryProducts';
 import AdminProducts from './admin/AdminProducts';
 import AdminOrders from './admin/AdminOrders';
 import AdminSettings from './admin/AdminSettings';
+import AdminContacts from './admin/AdminContacts';
+import ContactPage from './pages/ContactPage';
 
 function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -55,6 +57,7 @@ export default function App() {
         <Route path="/search" element={<ShopLayout><SearchPage /></ShopLayout>} />
         <Route path="/checkout" element={<ShopLayout><CheckoutPage /></ShopLayout>} />
         <Route path="/order-success" element={<ShopLayout><OrderSuccessPage /></ShopLayout>} />
+        <Route path="/contact" element={<ShopLayout><ContactPage /></ShopLayout>} />
 
         {/* ── Admin routes ── */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -72,6 +75,7 @@ export default function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="contacts" element={<AdminContacts />} />
         </Route>
 
         {/* ── Fallback ── */}

@@ -6,7 +6,7 @@ import { AdminUser, Setting, Category, Product } from './models';
 export async function connectDb(): Promise<void> {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/super-stam';
   await mongoose.connect(uri);
-  console.log('✅ MongoDB connected');
+  console.log('✅ MongoDB connected:', uri);
   await seedData();
 }
 

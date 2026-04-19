@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Tag, Package, ShoppingBag, Settings, LogOut, ChevronRight, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, Tag, Package, ShoppingBag, Settings, LogOut, ChevronRight, ExternalLink, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/admin/categories', label: 'קטגוריות', icon: <Tag size={20} /> },
   { to: '/admin/products', label: 'מוצרים', icon: <Package size={20} /> },
   { to: '/admin/orders', label: 'הזמנות', icon: <ShoppingBag size={20} /> },
+  { to: '/admin/contacts', label: 'הודעות', icon: <MessageSquare size={20} /> },
   { to: '/admin/settings', label: 'הגדרות', icon: <Settings size={20} /> },
 ];
 
