@@ -19,7 +19,7 @@ module.exports = {
     {
       name: 'superStamClient',
       script: 'serve',
-      args: '-s dist -l 5173',
+      args: 'dist --single --port 5173',
       cwd: '/root/NewPro/super-stam/client',
       instances: 1,
       autorestart: true,
