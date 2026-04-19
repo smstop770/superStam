@@ -78,3 +78,17 @@ const settingSchema = new Schema({
   value: { type: String, default: '' },
 }, opts);
 export const Setting = mongoose.model('Setting', settingSchema);
+
+// ── Contact ───────────────────────────────────────────────────
+const contactSchema = new Schema({
+  _id:        { type: String, required: true },
+  name:       { type: String, required: true },
+  phone:      { type: String, default: '' },
+  email:      { type: String, default: '' },
+  message:    { type: String, required: true },
+  status:     { type: String, default: 'new' }, // new | read | replied
+  reply:      { type: String, default: '' },
+  replied_at: { type: Date, default: null },
+  created_at: { type: Date, default: Date.now },
+}, opts);
+export const Contact = mongoose.model('Contact', contactSchema);

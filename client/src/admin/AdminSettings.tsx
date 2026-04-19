@@ -29,23 +29,22 @@ export default function AdminSettings() {
 
   const set = (key: string, value: string) => setSettings((p) => ({ ...p, [key]: value }));
 
-  // Parse/serialize voice admin phones (comma-separated in DB)
-  const adminPhones: string[] = (settings.voice_admin_phones || '')
-    .split(',').map(p => p.trim()).filter(Boolean);
+  // Parse/serialize voice admin phones as [{name, phone}]
+  const adminPhones: { name: string; phone: string }[] = (() => {
+    try { return JSON.parse(settings.voice_admin_phones || '[]'); } catch { return []; }
+  })();
 
-  const setAdminPhones = (phones: string[]) =>
-    set('voice_admin_phones', phones.join(','));
+  const setAdminPhones = (phones: { name: string; phone: string }[]) =>
+    set('voice_admin_phones', JSON.stringify(phones));
 
-  const addPhone = () => setAdminPhones([...adminPhones, '']);
+  const addPhone = () => setAdminPhones([...adminPhones, { name: '', phone: '' }]);
 
-  const updatePhone = (i: number, val: string) => {
-    const updated = [...adminPhones];
-    updated[i] = val;
+  const updatePhone = (i: number, field: 'name' | 'phone', val: string) => {
+    const updated = adminPhones.map((p, idx) => idx === i ? { ...p, [field]: val } : p);
     setAdminPhones(updated);
   };
 
-  const removePhone = (i: number) =>
-    setAdminPhones(adminPhones.filter((_, idx) => idx !== i));
+  const removePhone = (i: number) => setAdminPhones(adminPhones.filter((_, idx) => idx !== i));
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent"></div></div>;
 
@@ -112,17 +111,25 @@ export default function AdminSettings() {
           <p className="text-sm text-gray-400 italic">אין מספרים מוגדרים</p>
         )}
 
-        {adminPhones.map((phone, i) => (
+        {adminPhones.map((item, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
+              type="text"
+              value={item.name}
+              onChange={e => updatePhone(i, 'name', e.target.value)}
+              placeholder="שם המנהל"
+              className="input w-36"
+            />
+            <input
               type="tel"
-              value={phone}
-              onChange={e => updatePhone(i, e.target.value)}
+              value={item.phone}
+              onChange={e => updatePhone(i, 'phone', e.target.value)}
               placeholder="0501234567"
               className="input flex-1"
               dir="ltr"
             />
             <button
+              type="button"
               onClick={() => removePhone(i)}
               className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               title="הסר"
@@ -133,10 +140,11 @@ export default function AdminSettings() {
         ))}
 
         <button
+          type="button"
           onClick={addPhone}
           className="btn-outline flex items-center gap-2 text-sm"
         >
-          <Plus size={16} /> הוסף מספר מנהל
+          <Plus size={16} /> הוסף מנהל
         </button>
 
         <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2">

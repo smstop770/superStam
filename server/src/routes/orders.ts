@@ -9,7 +9,7 @@ const router = Router();
 async function sendVoiceCallToAdmins(order: any, adminPhones: any[]) {
   const token  = process.env.YEMOT_TOKEN;
   const did    = process.env.YEMOT_DID;
-  const apiUrl = process.env.YEMOT_API_URL || 'https://call2all.co.il/ymot/api';
+  const apiUrl = process.env.YEMOT_API_URL || 'https://call2all.co.il/ym/api';
   if (!token) return;
 
   const phones = adminPhones.filter((item: any) => item?.name && item?.phone);
@@ -18,11 +18,10 @@ async function sendVoiceCallToAdmins(order: any, adminPhones: any[]) {
   for (const item of phones) {
     const ttsMessage =
       `שלום ${item.name}. ` +
-      `הזמנה חדשה התקבלה! ` +
-      `שם: ${order.customer_name}. ` +
+      `הזמנה חדשה התקבלה באתר סופר סתם! ` +
+      `שם הלקוח: ${order.customer_name}. ` +
       `טלפון: ${order.customer_phone}. ` +
-      `סכום: ${order.total} שקל. ` +
-      `מספר: ${order.id.slice(0, 8)}.`;
+      `סכום: ${order.total} שקל. `;
     try {
       await axios.post(
         `${apiUrl}/SendTTS`,
