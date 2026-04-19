@@ -18,9 +18,8 @@ module.exports = {
     // ── 2. React client static server — port 5173 ─────────────────
     {
       name: 'superStamClient',
-      script: 'serve',
-      args: 'dist --single --port 5173',
-      cwd: '/root/NewPro/super-stam/client',
+      script: './client/serve-client.js',
+      cwd: '/root/NewPro/super-stam',
       instances: 1,
       autorestart: true,
       watch: false,
