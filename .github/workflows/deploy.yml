@@ -38,4 +38,4 @@ jobs:
             pm2 restart super-stam || pm2 start ecosystem.config.js
             pm2 save
 
-            echo "✅ Deploy finished!"
+            echo "✅ Deploy finished! good baybe 👋"
