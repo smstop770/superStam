@@ -1,7 +1,8 @@
 module.exports = {
   apps: [
+    // ── 1. Express server — API + serves React client on port 80 ──
     {
-      name: 'super-stam',
+      name: 'super-stam-server',
       script: './server/dist/index.js',
       cwd: '/root/NewPro/super-stam',
       instances: 1,
@@ -10,7 +11,7 @@ module.exports = {
       max_memory_restart: '500M',
       env: {
         NODE_ENV: 'production',
-        PORT: 4000,
+        PORT: 80,
       },
     },
   ],
