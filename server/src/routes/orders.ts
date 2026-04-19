@@ -6,18 +6,32 @@ import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
-async function sendVoiceCallToAdmins(order: any, adminPhones: string) {
+async function sendVoiceCallToAdmins(order: any, adminPhones: any[]) {
   const token  = process.env.YEMOT_TOKEN;
   const did    = process.env.YEMOT_DID;
   const apiUrl = process.env.YEMOT_API_URL || 'https://call2all.co.il/ymot/api';
   if (!token) return;
-  const phones = adminPhones.split(',').map(p => p.trim()).filter(Boolean);
+
+  const phones = adminPhones.filter((item: any) => item?.name && item?.phone);
   if (!phones.length) return;
-  const ttsMessage = `הזמנה חדשה התקבלה! שם: ${order.customer_name}. טלפון: ${order.customer_phone}. סכום: ${order.total} שקל. מספר: ${order.id.slice(0, 8)}.`;
-  for (const phone of phones) {
+
+  for (const item of phones) {
+    const ttsMessage =
+      `שלום ${item.name}. ` +
+      `הזמנה חדשה התקבלה! ` +
+      `שם: ${order.customer_name}. ` +
+      `טלפון: ${order.customer_phone}. ` +
+      `סכום: ${order.total} שקל. ` +
+      `מספר: ${order.id.slice(0, 8)}.`;
     try {
-      await axios.post(`${apiUrl}/SendTTS`, new URLSearchParams({ token, phones: phone, callerId: did || '', ttsVoice: 'Jacob', ttsMessage }).toString(), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10000 });
-    } catch (err: any) { console.error(`Voice call to ${phone} failed:`, err?.message); }
+      await axios.post(
+        `${apiUrl}/SendTTS`,
+        new URLSearchParams({ token, phones: item.phone, callerId: did || '', ttsVoice: 'Jacob', ttsMessage }).toString(),
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10000 }
+      );
+    } catch (err: any) {
+      console.error(`Voice call to ${item.name} (${item.phone}) failed:`, err?.message);
+    }
   }
 }
 
@@ -61,7 +75,12 @@ router.post('/', async (req: Request, res: Response) => {
     await new Order({ _id: id, ...orderData }).save();
 
     if (s.order_webhook_url) sendWebhook(orderData, s.order_webhook_url).catch(() => {});
-    if (s.voice_admin_phones) sendVoiceCallToAdmins(orderData, s.voice_admin_phones).catch(() => {});
+    if (s.voice_admin_phones) {
+      try {
+        const phonesArray = JSON.parse(s.voice_admin_phones);
+        sendVoiceCallToAdmins(orderData, phonesArray).catch(() => {});
+      } catch { /* invalid JSON — skip */ }
+    }
 
     res.status(201).json({ success: true, orderId: id, total, shipping });
   } catch { res.status(500).json({ error: 'שגיאה פנימית' }); }
