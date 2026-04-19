@@ -19,7 +19,9 @@ getDb();
 
 // Middleware
 app.use(cors({
-  origin: isProd ? '*' : (process.env.CLIENT_URL || 'http://localhost:5173'),
+  origin: isProd
+    ? ['http://38.242.215.142:5173', 'http://38.242.215.142']
+    : (process.env.CLIENT_URL || 'http://localhost:5173'),
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -41,20 +43,6 @@ app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
-
-// ── Serve React client in production ──────────────────────────────
-if (isProd) {
-  const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
-  if (fs.existsSync(clientDist)) {
-    // Serve static assets (JS, CSS, images)
-    app.use(express.static(clientDist));
-    // SPA fallback — send index.html for any unknown route
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(clientDist, 'index.html'));
-    });
-    console.log(`📦 Serving React client from ${clientDist}`);
-  }
-}
 
 // Global error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
