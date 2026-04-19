@@ -1,7 +1,9 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, 'dist');
 const PORT = 5173;
 
@@ -25,7 +27,6 @@ const MIME = {
 http.createServer((req, res) => {
   let filePath = path.join(DIST, decodeURIComponent(req.url.split('?')[0]));
 
-  // SPA fallback — serve index.html for unknown routes
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(DIST, 'index.html');
   }
