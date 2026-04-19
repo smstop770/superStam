@@ -19,6 +19,13 @@ jobs:
           timeout: 120s
           script: |
             set -e
+            export PATH="$PATH:/usr/local/bin:/root/.npm-global/bin"
+            source ~/.bashrc 2>/dev/null || true
+
+            echo "── Ensure global tools ───────────────────"
+            npm list -g pm2 --depth=0 2>/dev/null || npm install -g pm2
+            npm list -g serve --depth=0 2>/dev/null || npm install -g serve
+
             echo "── Pull latest code ──────────────────────"
             cd /root/NewPro/super-stam
             git pull origin main
@@ -35,7 +42,7 @@ jobs:
 
             echo "── Restart PM2 ───────────────────────────"
             cd ..
-            pm2 restart super-stam || pm2 start ecosystem.config.js
+            pm2 restart ecosystem.config.js --update-env 2>/dev/null || pm2 start ecosystem.config.js
             pm2 save
 
             echo "✅ Deploy finished! good baybe 👋"
