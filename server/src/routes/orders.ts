@@ -6,6 +6,45 @@ import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
+async function sendVoiceCallToAdmins(order: any, adminPhones: string) {
+  const token   = process.env.YEMOT_TOKEN;
+  const did     = process.env.YEMOT_DID;
+  const apiUrl  = process.env.YEMOT_API_URL || 'https://call2all.co.il/ymot/api';
+
+  if (!token) { console.warn('YEMOT_TOKEN not set — skipping voice calls'); return; }
+
+  const phones = adminPhones.split(',').map(p => p.trim()).filter(Boolean);
+  if (!phones.length) return;
+
+  const ttsMessage =
+    `הזמנה חדשה התקבלה בסופר סת"ם! ` +
+    `שם הלקוח: ${order.customer_name}. ` +
+    `טלפון: ${order.customer_phone}. ` +
+    `סכום: ${order.total} שקלים. ` +
+    `מספר הזמנה: ${order.id.slice(0, 8)}. ` +
+    `תודה!`;
+
+  for (const phone of phones) {
+    const params = new URLSearchParams({
+      token,
+      phones: phone,
+      callerId: did || '',
+      ttsVoice: 'Jacob',
+      ttsMessage,
+    });
+
+    try {
+      const res = await axios.post(`${apiUrl}/SendTTS`, params.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 10000,
+      });
+      console.log(`Voice call to ${phone}:`, res.data);
+    } catch (err: any) {
+      console.error(`Voice call to ${phone} failed:`, err?.message);
+    }
+  }
+}
+
 async function sendWebhook(order: any, webhookUrl: string) {
   try {
     await axios.post(webhookUrl, order, { timeout: 10000 });
@@ -69,6 +108,12 @@ router.post('/', async (req: Request, res: Response) => {
   const webhookUrl = settingsMap.order_webhook_url;
   if (webhookUrl) {
     sendWebhook(orderData, webhookUrl).catch(() => {});
+  }
+
+  // Send voice calls to all admin phones
+  const voicePhones = settingsMap.voice_admin_phones || '';
+  if (voicePhones) {
+    sendVoiceCallToAdmins(orderData, voicePhones).catch(() => {});
   }
 
   res.status(201).json({ success: true, orderId: id, total, shipping });

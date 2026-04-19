@@ -104,6 +104,7 @@ function seedData() {
       ['free_shipping_above', '300'],
       ['shipping_cost', '30'],
       ['order_webhook_url', process.env.ORDER_WEBHOOK_URL || ''],
+      ['voice_admin_phones', ''],
     ];
     const ins = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
     for (const [k, v] of defaults) ins.run(k, v);

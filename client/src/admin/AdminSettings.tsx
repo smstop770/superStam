@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getAllSettings, updateSettings, changePassword } from '../api';
 import toast from 'react-hot-toast';
-import { Save, Lock } from 'lucide-react';
+import { Save, Lock, Phone, Plus, Trash2 } from 'lucide-react';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -28,6 +28,24 @@ export default function AdminSettings() {
   };
 
   const set = (key: string, value: string) => setSettings((p) => ({ ...p, [key]: value }));
+
+  // Parse/serialize voice admin phones (comma-separated in DB)
+  const adminPhones: string[] = (settings.voice_admin_phones || '')
+    .split(',').map(p => p.trim()).filter(Boolean);
+
+  const setAdminPhones = (phones: string[]) =>
+    set('voice_admin_phones', phones.join(','));
+
+  const addPhone = () => setAdminPhones([...adminPhones, '']);
+
+  const updatePhone = (i: number, val: string) => {
+    const updated = [...adminPhones];
+    updated[i] = val;
+    setAdminPhones(updated);
+  };
+
+  const removePhone = (i: number) =>
+    setAdminPhones(adminPhones.filter((_, idx) => idx !== i));
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent"></div></div>;
 
@@ -77,6 +95,52 @@ export default function AdminSettings() {
         </div>
         <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2">
           <Save size={18} />{saving ? 'שומר...' : 'שמור הגדרות'}
+        </button>
+      </div>
+
+      {/* Voice calls to admins */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 space-y-4">
+        <h2 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+          <Phone size={20} className="text-primary" />
+          שיחות קוליות למנהלים
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          בכל הזמנה חדשה תישלח שיחה קולית אוטומטית לכל המספרים ברשימה — ימות המשיח TTS.
+        </p>
+
+        {adminPhones.length === 0 && (
+          <p className="text-sm text-gray-400 italic">אין מספרים מוגדרים</p>
+        )}
+
+        {adminPhones.map((phone, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => updatePhone(i, e.target.value)}
+              placeholder="0501234567"
+              className="input flex-1"
+              dir="ltr"
+            />
+            <button
+              onClick={() => removePhone(i)}
+              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="הסר"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+
+        <button
+          onClick={addPhone}
+          className="btn-outline flex items-center gap-2 text-sm"
+        >
+          <Plus size={16} /> הוסף מספר מנהל
+        </button>
+
+        <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2">
+          <Save size={18} />{saving ? 'שומר...' : 'שמור'}
         </button>
       </div>
 
