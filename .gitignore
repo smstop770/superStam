@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+
+# Env files
+.env
+.env.local
+server/.env
+
+# Runtime data
+server/data/
+server/uploads/
+
+# Client build
+client/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# TS cache
+*.tsbuildinfo
