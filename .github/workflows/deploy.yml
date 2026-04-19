@@ -19,11 +19,11 @@ jobs:
           timeout: 120s
           script: |
             set -e
-            export PATH="$PATH:/usr/local/bin:/root/.npm-global/bin"
-            source ~/.bashrc 2>/dev/null || true
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+            export PATH="$PATH:/usr/local/bin"
 
             echo "── Ensure global tools ───────────────────"
-            npm list -g pm2 --depth=0 2>/dev/null || npm install -g pm2
             npm list -g serve --depth=0 2>/dev/null || npm install -g serve
 
             echo "── Pull latest code ──────────────────────"
@@ -33,6 +33,7 @@ jobs:
             echo "── Install & build server ────────────────"
             cd server
             npm install
+            npm rebuild
             npm run build
 
             echo "── Install & build client ────────────────"
