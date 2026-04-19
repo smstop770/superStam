@@ -25,7 +25,7 @@ jobs:
 
             echo "── Install & build server ────────────────"
             cd server
-            npm install --omit=dev
+            npm install
             npm run build
 
             echo "── Install & build client ────────────────"
