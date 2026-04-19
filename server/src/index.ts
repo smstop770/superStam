@@ -20,7 +20,7 @@ getDb();
 // Middleware
 app.use(cors({
   origin: isProd
-    ? ['https://super-stam.teletop.biz', 'http://38.242.215.142:5173', 'http://38.242.215.142']
+    ? ['https://super-stam.teletop.biz', 'https://www.super-stam.teletop.biz', 'http://38.242.215.142:5173']
     : (process.env.CLIENT_URL || 'http://localhost:5173'),
   credentials: true,
 }));
